@@ -3,6 +3,10 @@
 	"version": "1.0.0",
 	"description": "A node.js library for interacting with the Monero Wallet RPC interface",
 	"main": "dist/index.ts",
+	"repository": {
+		"type": "git",
+		"url": "https://git.kyun.host/keef1337/noderowallet.git"
+	},
 	"scripts": {
 		"dev": "nodemon src/index.ts",
 		"prepack": "tsc"
