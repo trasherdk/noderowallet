@@ -1,0 +1,26 @@
+{
+	"name": "noderowallet",
+	"version": "1.0.0",
+	"description": "A node.js library for interacting with the Monero Wallet RPC interface",
+	"main": "dist/index.ts",
+	"scripts": {
+		"dev": "nodemon src/index.ts",
+		"prepack": "tsc"
+	},
+	"keywords": [
+		"monero",
+		"rpc",
+		"crypto",
+		"privacy",
+		"wallet"
+	],
+	"author": "keef1337",
+	"license": "BANG",
+	"devDependencies": {
+		"@types/node": "^18.16.2",
+		"nodemon": "^2.0.22",
+		"ts-node": "^10.9.1",
+		"typescript": "^5.0.4"
+	},
+	"types": "dist/index.d.ts"
+}
