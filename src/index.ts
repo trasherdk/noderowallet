@@ -5,6 +5,31 @@ const stringifyInts = (json: string) => {
 	return json.replaceAll(/(?<=".+?": )(\d+)(?=,?[^0-9]?$)/gm, '"$1n"')
 }
 
+export interface MoneroSubaddressIndex {
+	major: bigint
+	minor: bigint
+}
+
+export interface MoneroTransfer {
+	address: string
+	amount: bigint
+	amounts: bigint[]
+	confirmations: bigint
+	double_spend_seen: boolean
+	fee: bigint
+	height: bigint
+	locked: boolean
+	note: string
+	payment_id: string
+	subaddr_index: MoneroSubaddressIndex
+	subaddr_indices?: MoneroSubaddressIndex[]
+	suggested_confirmations_threshold: bigint
+	timestamp: bigint
+	txid: string
+	type: string
+	unlock_time: bigint
+}
+
 export class MoneroRpcError extends Error {
 	code?: number
 	errorMessage?: string
@@ -170,7 +195,17 @@ export class NoderoWallet {
 			multisig_import_needed: boolean
 			time_to_unlock: bigint
 			blocks_to_unlock: bigint
-			per_subaddress: any[]
+			per_subaddress: {
+				account_index: bigint
+				address: string
+				address_index: bigint
+				balance: bigint
+				blocks_to_unlock: bigint
+				label: string
+				num_unspent_outputs: bigint
+				time_to_unlock: bigint
+				unlocked_balance: bigint
+			}[]
 			address_index: bigint
 			address: string
 			label: string
@@ -190,7 +225,7 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_address}
 	 */
 	async getAddress(
-		account_index: bigint | number,
+		account_index?: bigint | number,
 		address_index?: (bigint | number)[]
 	) {
 		return await this.request<{
@@ -203,12 +238,9 @@ export class NoderoWallet {
 	 * @arg address - (sub)address to look for.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_address_index}
 	 */
-	async getAddressIndex(address: any) {
+	async getAddressIndex(address?: string) {
 		return await this.request<{
-			index: {
-				major: bigint
-				minor: bigint
-			}
+			index: MoneroSubaddressIndex
 		}>('get_address_index', { address })
 	}
 
@@ -220,7 +252,7 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#create_address}
 	 */
 	async createAddress(
-		account_index: bigint | number,
+		account_index?: bigint | number,
 		label?: string,
 		count?: bigint
 	) {
@@ -238,8 +270,8 @@ export class NoderoWallet {
 	 * @arg minor - Index of the subaddress in the account.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#label_address}
 	 */
-	async labelAddress(index: any, minor: bigint | number) {
-		return await this.request<{}>('label_address', { index, minor })
+	async labelAddress(index?: MoneroSubaddressIndex, label?: string) {
+		return await this.request<{}>('label_address', { index, label })
 	}
 
 	/**
@@ -250,7 +282,7 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#validate_address}
 	 */
 	async validateAddress(
-		address: string,
+		address?: string,
 		any_net_type?: boolean,
 		allow_openalias?: boolean
 	) {
@@ -276,7 +308,7 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_accounts}
 	 */
 	async getAccounts(
-		subaddress_accounts: {
+		subaddress_accounts?: {
 			account_index: bigint
 			balance: bigint
 			base_address: string
@@ -284,9 +316,9 @@ export class NoderoWallet {
 			tag: string
 			unlocked_balance: bigint
 		},
-		balance: bigint | number,
-		base_address: string,
-		unlocked_balance: bigint | number,
+		balance?: bigint | number,
+		base_address?: string,
+		unlocked_balance?: bigint | number,
 		tag?: string,
 		regex?: boolean,
 		strict_balances?: boolean,
@@ -322,7 +354,7 @@ export class NoderoWallet {
 	 * @arg label - Label for the account.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#label_account}
 	 */
-	async labelAccount(account_index: bigint | number, label: string) {
+	async labelAccount(account_index?: bigint | number, label?: string) {
 		return await this.request<{}>('label_account', { account_index, label })
 	}
 
@@ -348,7 +380,7 @@ export class NoderoWallet {
 	 * @arg accounts - Tag this list of accounts.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#tag_accounts}
 	 */
-	async tagAccounts(tag: string, accounts: (bigint | number)[]) {
+	async tagAccounts(tag?: string, accounts?: (bigint | number)[]) {
 		return await this.request<{}>('tag_accounts', { tag, accounts })
 	}
 
@@ -357,7 +389,7 @@ export class NoderoWallet {
 	 * @arg accounts - Remove tag from this list of accounts.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#untag_accounts}
 	 */
-	async untagAccounts(accounts: (bigint | number)[]) {
+	async untagAccounts(accounts?: (bigint | number)[]) {
 		return await this.request<{}>('untag_accounts', { accounts })
 	}
 
@@ -367,7 +399,7 @@ export class NoderoWallet {
 	 * @arg description - Description for the tag.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#set_account_tag_description}
 	 */
-	async setAccountTagDescription(tag: string, description: string) {
+	async setAccountTagDescription(tag?: string, description?: string) {
 		return await this.request<{}>('set_account_tag_description', {
 			tag,
 			description
@@ -400,7 +432,7 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#transfer}
 	 */
 	async transfer(
-		destinations: {
+		destinations?: {
 			amount: bigint | number
 			address: string
 		}[],
@@ -455,7 +487,7 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#transfer}
 	 */
 	async transferSplit(
-		destinations: {
+		destinations?: {
 			amount: bigint | number
 			address: string
 		}[],
@@ -506,7 +538,7 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#sign_transfer}
 	 */
 	async signTransfer(
-		unsigned_txset: string,
+		unsigned_txset?: string,
 		export_raw?: boolean,
 		get_tx_keys?: boolean
 	) {
@@ -523,7 +555,7 @@ export class NoderoWallet {
 	 * @arg tx_data_hex - Set of signed tx returned by "sign_transfer"
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#submit_transfer}
 	 */
-	async submitTransfer(tx_data_hex: string) {
+	async submitTransfer(tx_data_hex?: string) {
 		return await this.request<{
 			tx_hash_list: string[]
 		}>('submit_transfer', { tx_data_hex })
@@ -583,8 +615,8 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#sweep_all}
 	 */
 	async sweepAll(
-		address: string,
-		account_index: bigint | number,
+		address?: string,
+		account_index?: bigint | number,
 		outputs?: bigint | number,
 		ring_size?: bigint | number,
 		unlock_time?: bigint | number,
@@ -643,11 +675,11 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#sweep_single}
 	 */
 	async sweepSingle(
-		address: string,
-		outputs: bigint | number,
-		ring_size: bigint | number,
-		unlock_time: bigint | number,
-		key_image: string,
+		address?: string,
+		outputs?: bigint | number,
+		ring_size?: bigint | number,
+		unlock_time?: bigint | number,
+		key_image?: string,
 		priority?: bigint | number,
 		payment_id?: string,
 		get_tx_key?: boolean,
@@ -686,9 +718,9 @@ export class NoderoWallet {
 	 * @arg hex - transaction metadata returned from a transfer method with get_tx_metadata set to true.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#relay_tx}
 	 */
-	async relayTx(hex: string) {
+	async relayTx(hex?: string) {
 		return await this.request<{
-			tx_hash: any
+			tx_hash: string
 		}>('relay_tx', { hex })
 	}
 
@@ -705,16 +737,18 @@ export class NoderoWallet {
 	 * @arg payment_id - Payment ID used to find the payments (16 characters hex).
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_payments}
 	 */
-	async getPayments(payment_id: string) {
+	async getPayments(payment_id?: string) {
 		return await this.request<{
-			payments: string[]
-			tx_hash: string
-			amount: bigint
-			block_height: bigint
-			unlock_time: bigint
-			locked: boolean
-			subaddr_index: bigint
-			minor: bigint
+			payments: {
+				address: string
+				amount: bigint
+				block_height: bigint
+				payment_id: string
+				subaddr_index: MoneroSubaddressIndex
+				tx_hash: string
+				unlock_time: bigint
+				locked: boolean
+			}[]
 		}>('get_payments', { payment_id })
 	}
 
@@ -725,8 +759,8 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_bulk_payments}
 	 */
 	async getBulkPayments(
-		payment_ids: string[],
-		min_block_height: bigint | number
+		payment_ids?: string[],
+		min_block_height?: bigint | number
 	) {
 		return await this.request<{
 			payments: string[]
@@ -747,17 +781,23 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#incoming_transfers}
 	 */
 	async incomingTransfers(
-		transfer_type: string,
+		transfer_type?: string,
 		account_index?: bigint | number,
 		subaddr_indices?: (bigint | number)[]
 	) {
 		return await this.request<{
-			transfers: bigint[]
-			global_index: bigint
-			key_image: string
-			spent: boolean
-			subaddr_index: any
-			minor: bigint
+			transfers: {
+				amount: bigint
+				block_height: bigint
+				global_index: bigint
+				key_image: string
+				spent: boolean
+				subaddr_index: MoneroSubaddressIndex
+				tx_hash: string
+				pubkey: string
+				frozen: boolean
+				unlocked: boolean
+			}[]
 		}>('incoming_transfers', {
 			transfer_type,
 			account_index,
@@ -770,7 +810,7 @@ export class NoderoWallet {
 	 * @arg key_type - Which key to retrieve: "mnemonic" - the mnemonic seed (older wallets do not have one) OR "view_key" - the view key OR "spend_key".
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#query_key}
 	 */
-	async queryKey(key_type: string) {
+	async queryKey(key_type?: string) {
 		return await this.request<{
 			key: string
 		}>('query_key', { key_type })
@@ -796,7 +836,7 @@ export class NoderoWallet {
 	 * Retrieve the standard address and payment id corresponding to an integrated address.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#split_integrated_address}
 	 */
-	async splitIntegratedAddress(integrated_address: string) {
+	async splitIntegratedAddress(integrated_address?: string) {
 		return await this.request<{
 			is_subaddress: boolean
 			payment: string
@@ -826,7 +866,7 @@ export class NoderoWallet {
 	 * @arg notes - notes for the transactions
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#set_tx_notes}
 	 */
-	async setTxNotes(txids: string[], notes: string[]) {
+	async setTxNotes(txids?: string[], notes?: string[]) {
 		return await this.request<{}>('set_tx_notes', { txids, notes })
 	}
 
@@ -835,7 +875,7 @@ export class NoderoWallet {
 	 * @arg txids - transaction ids
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_tx_notes}
 	 */
-	async getTxNotes(txids: string[]) {
+	async getTxNotes(txids?: string[]) {
 		return await this.request<{
 			notes: string[]
 		}>('get_tx_notes', { txids })
@@ -847,7 +887,7 @@ export class NoderoWallet {
 	 * @arg value - attribute value
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#set_attribute}
 	 */
-	async setAttribute(key: string, value: string) {
+	async setAttribute(key?: string, value?: string) {
 		return await this.request<{}>('set_attribute', { key, value })
 	}
 
@@ -856,7 +896,7 @@ export class NoderoWallet {
 	 * @arg key - attribute name
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_attribute}
 	 */
-	async getAttribute(key: string) {
+	async getAttribute(key?: string) {
 		return await this.request<{
 			value: string
 		}>('get_attribute', { key })
@@ -867,7 +907,7 @@ export class NoderoWallet {
 	 * @arg txid - transaction id.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_tx_key}
 	 */
-	async getTxKey(txid: string) {
+	async getTxKey(txid?: string) {
 		return await this.request<{
 			tx_key: string
 		}>('get_tx_key', { txid })
@@ -880,7 +920,7 @@ export class NoderoWallet {
 	 * @arg address - destination public address of the transaction.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#check_tx_key}
 	 */
-	async checkTxKey(txid: string, tx_key: string, address: string) {
+	async checkTxKey(txid?: string, tx_key?: string, address?: string) {
 		return await this.request<{
 			confirmations: bigint
 			in_pool: boolean
@@ -895,7 +935,7 @@ export class NoderoWallet {
 	 * @arg message - add a message to the signature to further authenticate the prooving process.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_tx_proof}
 	 */
-	async getTxProof(txid: string, address: string, message?: string) {
+	async getTxProof(txid?: string, address?: string, message?: string) {
 		return await this.request<{
 			signature: string
 		}>('get_tx_proof', { txid, address, message })
@@ -910,9 +950,9 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#check_tx_proof}
 	 */
 	async checkTxProof(
-		txid: string,
-		address: string,
-		signature: string,
+		txid?: string,
+		address?: string,
+		signature?: string,
 		message?: string
 	) {
 		return await this.request<{
@@ -929,7 +969,7 @@ export class NoderoWallet {
 	 * @arg message - add a message to the signature to further authenticate the prooving process.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_spend_proof}
 	 */
-	async getSpendProof(txid: string, message?: string) {
+	async getSpendProof(txid?: string, message?: string) {
 		return await this.request<{
 			signature: string
 		}>('get_spend_proof', { txid, message })
@@ -942,7 +982,7 @@ export class NoderoWallet {
 	 * @arg message - Should be the same message used in get_spend_proof.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#check_spend_proof}
 	 */
-	async checkSpendProof(txid: string, signature: string, message?: string) {
+	async checkSpendProof(txid?: string, signature?: string, message?: string) {
 		return await this.request<{
 			good: boolean
 		}>('check_spend_proof', { txid, signature, message })
@@ -957,9 +997,9 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_reserve_proof}
 	 */
 	async getReserveProof(
-		all: boolean,
-		account_index: bigint | number,
-		amount: bigint | number,
+		all?: boolean,
+		account_index?: bigint | number,
+		amount?: bigint | number,
 		message?: string
 	) {
 		return await this.request<{
@@ -975,8 +1015,8 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#check_reserve_proof}
 	 */
 	async checkReserveProof(
-		address: string,
-		signature: string,
+		address?: string,
+		signature?: string,
 		message?: string
 	) {
 		return await this.request<{
@@ -1001,6 +1041,7 @@ export class NoderoWallet {
 	 * @arg all_accounts - (Defaults to false).
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_transfers}
 	 */
+
 	async getTransfers(
 		inn?: boolean,
 		out?: boolean,
@@ -1014,23 +1055,10 @@ export class NoderoWallet {
 		subaddr_indices?: (bigint | number)[],
 		all_accounts?: boolean
 	) {
-		return await this.request<
-			{
-				address: string
-				amount: bigint
-				amounts: bigint[]
-				confirmations: bigint
-				double_spend_seen: boolean
-				fee: bigint
-				height: bigint
-				note: string
-				destinations: any[]
-				payment_id: string
-				subaddr_index: any
-				minor: bigint
-			}[]
-		>('get_transfers', {
-			inn,
+		return await this.request<{
+			[key: string]: MoneroTransfer[]
+		}>('get_transfers', {
+			in: inn,
 			out,
 			pending,
 			failed,
@@ -1050,14 +1078,10 @@ export class NoderoWallet {
 	 * @arg account_index - Index of the account to query for the transfer.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_transfer_by_txid}
 	 */
-	async getTransferByTxid(txid: string, account_index?: bigint | number) {
+	async getTransferByTxid(txid?: string, account_index?: bigint | number) {
 		return await this.request<{
-			transfer: any
-			amount: bigint
-			amounts: any[]
-			confirmations: bigint
-			destinations: any[]
-			address: string
+			transfer: MoneroTransfer
+			transfers: MoneroTransfer[]
 		}>('get_transfer_by_txid', { txid, account_index })
 	}
 
@@ -1081,7 +1105,7 @@ export class NoderoWallet {
 	 * @arg data - Anything you need to sign.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#sign}
 	 */
-	async sign(data: string) {
+	async sign(data?: string) {
 		return await this.request<{
 			signature: string
 		}>('sign', { data })
@@ -1094,7 +1118,7 @@ export class NoderoWallet {
 	 * @arg signature - signature generated by sign method.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#verify}
 	 */
-	async verify(data: string, address: string, signature: string) {
+	async verify(data?: string, address?: string, signature?: string) {
 		return await this.request<{
 			good: boolean
 		}>('verify', { data, address, signature })
@@ -1116,7 +1140,7 @@ export class NoderoWallet {
 	 * @arg outputs_data_hex - wallet outputs in hex format.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#import_outputs}
 	 */
-	async importOutputs(outputs_data_hex: string) {
+	async importOutputs(outputs_data_hex?: string) {
 		return await this.request<{
 			num_imported: bigint
 		}>('import_outputs', { outputs_data_hex })
@@ -1142,8 +1166,8 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#import_key_images}
 	 */
 	async importKeyImages(
-		signed_key_images: string[],
-		signature: string,
+		signed_key_images?: string[],
+		signature?: string,
 		offset?: bigint
 	) {
 		return await this.request<{
@@ -1163,7 +1187,7 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#make_uri}
 	 */
 	async makeUri(
-		address: string,
+		address?: string,
 		amount?: bigint | number,
 		payment_id?: string,
 		recipient_name?: string,
@@ -1185,13 +1209,15 @@ export class NoderoWallet {
 	 * @arg uri - This contains all the payment input information as a properly formatted payment URI
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#parse_uri}
 	 */
-	async parseUri(uri: string) {
+	async parseUri(uri?: string) {
 		return await this.request<{
-			uri: any
-			amount: bigint
-			payment_id?: string
-			recipient_name: string
-			tx_description: string
+			uri: {
+				address: string
+				amount: bigint
+				payment_id: string
+				recipient_name: string
+				tx_description: string
+			}
 		}>('parse_uri', { uri })
 	}
 
@@ -1200,7 +1226,7 @@ export class NoderoWallet {
 	 * @arg entries - indices of the requested address book entries
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_address_book}
 	 */
-	async getAddressBook(entries: (bigint | number)[]) {
+	async getAddressBook(entries?: (bigint | number)[]) {
 		return await this.request<{
 			entries: string[]
 			description: string
@@ -1215,7 +1241,7 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#add_address_book}
 	 */
 	async addAddressBook(
-		address: string,
+		address?: string,
 		payment_id?: string,
 		description?: string
 	) {
@@ -1236,10 +1262,10 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#edit_address_book}
 	 */
 	async editAddressBook(
-		index: bigint | number,
-		set_address: boolean,
-		set_description: boolean,
-		set_payment_id: boolean,
+		index?: bigint | number,
+		set_address?: boolean,
+		set_description?: boolean,
+		set_payment_id?: boolean,
 		address?: string,
 		description?: string,
 		payment_id?: string
@@ -1260,7 +1286,7 @@ export class NoderoWallet {
 	 * @arg index - The index of the address book entry.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#delete_address_book}
 	 */
-	async deleteAddressBook(index: bigint | number) {
+	async deleteAddressBook(index?: bigint | number) {
 		return await this.request<{}>('delete_address_book', { index })
 	}
 
@@ -1302,9 +1328,9 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#start_mining}
 	 */
 	async startMining(
-		threads_count: bigint | number,
-		do_background_mining: boolean,
-		ignore_battery: boolean
+		threads_count?: bigint | number,
+		do_background_mining?: boolean,
+		ignore_battery?: boolean
 	) {
 		return await this.request<{}>('start_mining', {
 			threads_count,
@@ -1338,7 +1364,11 @@ export class NoderoWallet {
 	 * @arg password - password to protect the wallet.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#create_wallet}
 	 */
-	async createWallet(filename: string, language: string, password?: string) {
+	async createWallet(
+		filename?: string,
+		language?: string,
+		password?: string
+	) {
 		return await this.request<{}>('create_wallet', {
 			filename,
 			language,
@@ -1358,10 +1388,10 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#generate_from_keys}
 	 */
 	async generateFromKeys(
-		filename: string,
-		address: string,
-		viewkey: string,
-		password: string,
+		filename?: string,
+		address?: string,
+		viewkey?: string,
+		password?: string,
 		restore_height?: bigint | number,
 		spendkey?: string,
 		autosave_current?: boolean
@@ -1386,7 +1416,7 @@ export class NoderoWallet {
 	 * @arg password - only needed if the wallet has a password defined.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#open_wallet}
 	 */
-	async openWallet(filename: string, password?: string) {
+	async openWallet(filename?: string, password?: string) {
 		return await this.request<{}>('open_wallet', { filename, password })
 	}
 
@@ -1402,9 +1432,9 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#restore_deterministic_wallet}
 	 */
 	async restoreDeterministicWallet(
-		filename: string,
-		password: string,
-		seed: string,
+		filename?: string,
+		password?: string,
+		seed?: string,
 		restore_height?: bigint | number,
 		language?: string,
 		seed_offset?: string,
@@ -1478,9 +1508,9 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#make_multisig}
 	 */
 	async makeMultisig(
-		multisig_info: string[],
-		threshold: bigint | number,
-		password: string
+		multisig_info?: string[],
+		threshold?: bigint | number,
+		password?: string
 	) {
 		return await this.request<{
 			address: string
@@ -1503,7 +1533,7 @@ export class NoderoWallet {
 	 * @arg info - List of multisig info in hex format from other participants.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#import_multisig_info}
 	 */
-	async importMultisigInfo(info: string[]) {
+	async importMultisigInfo(info?: string[]) {
 		return await this.request<{
 			n_outputs: bigint
 		}>('import_multisig_info', { info })
@@ -1515,7 +1545,7 @@ export class NoderoWallet {
 	 * @arg password - Wallet password
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#finalize_multisig}
 	 */
-	async finalizeMultisig(multisig_info: string[], password: string) {
+	async finalizeMultisig(multisig_info?: string[], password?: string) {
 		return await this.request<{
 			address: string
 		}>('finalize_multisig', { multisig_info, password })
@@ -1526,7 +1556,7 @@ export class NoderoWallet {
 	 * @arg tx_data_hex - Multisig transaction in hex format, as returned by transfer under multisig_txset.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#sign_multisig}
 	 */
-	async signMultisig(tx_data_hex: string) {
+	async signMultisig(tx_data_hex?: string) {
 		return await this.request<{
 			tx_data_hex: string
 			tx_hash_list: string[]
@@ -1538,7 +1568,7 @@ export class NoderoWallet {
 	 * @arg tx_data_hex - Multisig transaction in hex format, as returned by sign_multisig under tx_data_hex.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#submit_multisig}
 	 */
-	async submitMultisig(tx_data_hex: string) {
+	async submitMultisig(tx_data_hex?: string) {
 		return await this.request<{
 			tx_hash_list: string[]
 		}>('submit_multisig', { tx_data_hex })
@@ -1558,7 +1588,7 @@ export class NoderoWallet {
 	 * Freeze a single output by key image so it will not be used
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#freeze}
 	 */
-	async freeze(key_image: string) {
+	async freeze(key_image?: string) {
 		return await this.request<{}>('freeze', { key_image })
 	}
 
@@ -1566,7 +1596,7 @@ export class NoderoWallet {
 	 * Checks whether a given output is currently frozen by key image
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#frozen}
 	 */
-	async frozen(key_image: string) {
+	async frozen(key_image?: string) {
 		return await this.request<{
 			frozen: boolean
 		}>('frozen', { key_image })
@@ -1576,7 +1606,7 @@ export class NoderoWallet {
 	 * Thaw a single output by key image so it may be used again
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#thaw}
 	 */
-	async thaw(key_image: string) {
+	async thaw(key_image?: string) {
 		return await this.request<{}>('thaw', { key_image })
 	}
 
@@ -1586,8 +1616,8 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#exchange_multisig_keys}
 	 */
 	async exchangeMultisigKeys(
-		password: string,
-		multisig_info: string,
+		password?: string,
+		multisig_info?: string,
 		force_update_use_with_caution?: boolean
 	) {
 		return await this.request<{
@@ -1606,10 +1636,10 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#estimate_tx_size_and_weight}
 	 */
 	async estimateTxSizeAndWeight(
-		n_inputs: bigint | number,
-		n_outputs: bigint | number,
-		ring_size: bigint | number,
-		rct: boolean
+		n_inputs?: bigint | number,
+		n_outputs?: bigint | number,
+		ring_size?: bigint | number,
+		rct?: boolean
 	) {
 		return await this.request<{
 			size: bigint
@@ -1626,7 +1656,7 @@ export class NoderoWallet {
 	 * Given list of txids, scan each for outputs belonging to your wallet. Note that the node will see these specific requests and may be a privacy concern.
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#scan_tx}
 	 */
-	async scanTx(txids: string[]) {
+	async scanTx(txids?: string[]) {
 		return await this.request<{}>('scan_tx', { txids })
 	}
 }
