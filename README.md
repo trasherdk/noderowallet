@@ -9,7 +9,7 @@ Currently, authentication is not supported. You have to start `monero-wallet-rpc
 ## Usage
 
 ```ts
-import NoderoWallet from 'noderowallet'
+import {NoderoWallet} from 'noderowallet'
 
 const monero = new NoderoWallet({ host: '127.0.0.1', port: 6000 })
 monero.getBalance().then((x) => console.log(x))
