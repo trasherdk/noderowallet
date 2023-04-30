@@ -308,31 +308,25 @@ export class NoderoWallet {
 	 * @see {@link https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#get_accounts}
 	 */
 	async getAccounts(
-		subaddress_accounts?: {
-			account_index: bigint
-			balance: bigint
-			base_address: string
-			label: string
-			tag: string
-			unlocked_balance: bigint
-		},
-		balance?: bigint | number,
-		base_address?: string,
-		unlocked_balance?: bigint | number,
 		tag?: string,
 		regex?: boolean,
-		strict_balances?: boolean,
-		label?: string
+		strict_balances?: boolean
 	) {
-		return await this.request<{}>('get_accounts', {
-			subaddress_accounts,
-			balance,
-			base_address,
-			unlocked_balance,
+		return await this.request<{
+			subaddress_accounts: {
+				account_index: bigint
+				balance: bigint
+				base_address: string
+				label?: string
+				tag?: string
+				unlocked_balance?: bigint
+			}[]
+			total_balance: bigint
+			total_unlocked_balance: bigint
+		}>('get_accounts', {
 			tag,
 			regex,
-			strict_balances,
-			label
+			strict_balances
 		})
 	}
 
