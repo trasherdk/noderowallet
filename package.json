@@ -5,7 +5,7 @@
 	"main": "dist/index.js",
 	"repository": {
 		"type": "git",
-		"url": "https://git.kyun.host/keef1337/noderowallet.git"
+		"url": "https://github.com/trasherdk/noderowallet.git"
 	},
 	"scripts": {
 		"dev": "nodemon src/index.ts",
@@ -21,7 +21,7 @@
 	"author": "keef1337",
 	"license": "BANG",
 	"devDependencies": {
-		"@types/node": "^18.16.2",
+		"@types/node": "^18.16.3",
 		"nodemon": "^2.0.22",
 		"ts-node": "^10.9.1",
 		"typescript": "^5.0.4"
