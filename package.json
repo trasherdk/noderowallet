@@ -9,7 +9,8 @@
 	},
 	"scripts": {
 		"dev": "nodemon src/index.ts",
-		"prepack": "tsc"
+		"prepack": "tsc",
+		"test": "vitest"
 	},
 	"keywords": [
 		"monero",
@@ -22,9 +23,11 @@
 	"license": "BANG",
 	"devDependencies": {
 		"@types/node": "^18.16.3",
+		"dotenv": "^16.0.3",
 		"nodemon": "^2.0.22",
 		"ts-node": "^10.9.1",
-		"typescript": "^5.0.4"
+		"typescript": "^5.0.4",
+		"vitest": "^0.31.0"
 	},
 	"types": "dist/index.d.ts"
 }
